@@ -3,7 +3,6 @@
 
   IR Remote control of a gas fireplace
 
-
   Feature Brainstorming:
 
   - "Learning Mode" - enabled when powered on.  Can learn new remote codes.
@@ -44,8 +43,8 @@
 #include <SoftSerial.h>               // Software Serial library to help with debugging (for ATtiny)
 #include <SoftwareSerial.h>           // Standard Software Serial library (for ATmega)
 
-#include <Time.h>
-#include <TimeAlarms.h>
+// #include <Time.h>
+// #include <TimeAlarms.h>
 
 const int debounceDelay = 10;          // milliseconds to wait until stable reading of pushButton
 
@@ -53,6 +52,8 @@ const int CONSOLE = 1;                 // "made up" numbers used to indicator th
 const int IR = 2;                      // This is the IR "made up" source number
 const int MINUTES_PER_INDICATOR = 15;  // Each indicator light = 15 minutes
 const int BUTTON_PRESS_DELAY = 3000;   // number of milliseconds after which I'll assume the user is done pressing buttons
+unsigned long lastUserInput = 0;       // This tracks the last time user input was received.  Used in conjunction with BUTTON_PRESS_DELAY to determine when to commit a command.
+const unsigned int MS_PER_MIN = 60000; // milliseconds per minute. This allows me to adjust the timing for either testing purposes or inaccurate crystals
 
 
 #if defined(__AVR_ATtiny84__)
@@ -122,7 +123,9 @@ const int8_t MAX_FILEPLACE_TIME = 120;        // Fireplace will never be on long
 // These are used in the interrupt service routine, so they are volatile
 volatile unsigned long buttonPressDuration = 0;  // Also used as a flag that a button press now requires processing
 
-unsigned long lastUserInput = 0;
+unsigned long lastCountDownTimer  = 0;        // This is used to keep track of time in the sketch
+unsigned long elapsedWholeMinutes = 0;        // Number of whole minutes since the program started.  unsigned long gives me 4 bytes (2 ^ 32 = ~8000 years without a rollover)
+unsigned long tmpWholeMinutes;                // tmp location to stash calculation so I don't have to test condition and calculate twice
 
 // Initialize IR library and storage location
 IRrecv irrecv (irReceivePin);         // create the IR library (I believe this is actually a function prototype)
@@ -131,8 +134,6 @@ SoftwareSerial debug (rxpin, txpin);  // create a new software serial port
 
 void setup()
 {
-  // delay (5000);
-
   debug.begin(9600);
   
  /*
@@ -142,7 +143,6 @@ void setup()
   debug.println (GARBAGE4);  
   */
  
-
   pinMode (led15, OUTPUT);
   pinMode (led30, OUTPUT);
   pinMode (led45, OUTPUT);
@@ -166,8 +166,8 @@ void setup()
     debug.println ("Started fireplace Remote Control Sketch on ATmega328");
   #endif
 
-  debug.println ("Startup Delay ...");
-  delay (2000);
+  // debug.println ("Startup Delay ...");
+  // delay (2000);
   
   debug.println ("Armed and ready."); 
    
@@ -175,7 +175,8 @@ void setup()
   attachInterrupt (0, isrButtonPress, CHANGE);   
   buttonPressDuration = 0;    // For some reason the above interrupt "fires" when it is first attached.  At least I believe that is the case.  Setting this var to "0" fixes that issue.
   
-  Alarm.timerRepeat(5, countDownTimer); // timer for every 60 seconds
+  // Alarm.timerRepeat(5, countDownTimer); // timer for every 60 seconds
+  lastCountDownTimer = millis ();          // This essentially starts the timer running for this sketch.  Not 100% sure how accurate this will be.
 
   // learnKeycodes();                  // learn remote control key  codes
 }
@@ -218,7 +219,19 @@ void loop()
   // Do the glowing LED thang when the fireplace is about to go out.  A bit of logic added to cover transition to fireplaceoff (fireplaceMinutes > 0)
   if ( (fireplaceOn) && (fireplaceMinutes <= WARNING) && (fireplaceMinutes > 0) ) warningLight ();
        
-  Alarm.delay (0);  // You have to service the Time library with this command
+  // Alarm.delay (0);  // You have to service the Time library with this command
+  // Giving up on "Alarm" since it added about 2Kb to my sketch.
+  // I want to call the "countDownTimer" routine once a minute
+  if ( (tmpWholeMinutes = millis () / MS_PER_MIN) > elapsedWholeMinutes)   // this means we've advanced at least a minute 
+  {
+    debug.print ("advancing minutes.  tmpWholeMinutes =      ");
+    debug.println (tmpWholeMinutes);
+    debug.print ("                    elapshedWholeMinutes = ");
+    debug.println (elapsedWholeMinutes);    
+    countDownTimer ();
+    elapsedWholeMinutes = tmpWholeMinutes;  // update with the lastest value (which I stored in tmpWholeMinutes
+  }
+  
 }
 
 /*
