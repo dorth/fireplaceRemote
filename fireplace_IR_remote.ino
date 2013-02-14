@@ -3,6 +3,7 @@
 
   IR Remote control of a gas fireplace
 
+
   Feature Brainstorming:
 
   - "Learning Mode" - enabled when powered on.  Can learn new remote codes.
