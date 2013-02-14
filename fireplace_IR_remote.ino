@@ -53,7 +53,7 @@ const int IR = 2;                      // This is the IR "made up" source number
 const int MINUTES_PER_INDICATOR = 15;  // Each indicator light = 15 minutes
 const int BUTTON_PRESS_DELAY = 3000;   // number of milliseconds after which I'll assume the user is done pressing buttons
 unsigned long lastUserInput = 0;       // This tracks the last time user input was received.  Used in conjunction with BUTTON_PRESS_DELAY to determine when to commit a command.
-const unsigned int MS_PER_MIN = 60000; // milliseconds per minute. This allows me to adjust the timing for either testing purposes or inaccurate crystals
+const unsigned int MS_PER_MIN = 5000; // 60000 milliseconds per minute. This allows me to adjust the timing for either testing purposes or inaccurate crystals
 
 
 #if defined(__AVR_ATtiny84__)
@@ -110,11 +110,11 @@ const char GARBAGE8 [] = "What the heck is this and why should I even care?";
 */
 
 
-
-boolean fireplaceOn = false;             // keep track of fireplace state
-int fireplaceMinutes = 0;                // Number of minutes left to run fireplace. Start with 0 so you don't FLAME ON!  :-)  Unsigned, so never negative
-const int WARNING = 5;                   // Flash the LED when you've got this many minutes left
-const int CYLON_DELAY_PERIOD = 20;       // Adjust how fast the WARNING light cycles - 20ms seems about right
+boolean fireplaceOn = false;                  // keep track of fireplace state
+int fireplaceMinutes = 0;                     // Number of minutes left to run fireplace. Start with 0 so you don't FLAME ON!  :-)  Unsigned, so never negative
+const int SHUTDOWN_WARNING_MINUTES = 13;      // Flash the LED when you've got this many minutes left
+boolean   SHUTDOWN_WARNING_PERIOD = false;    // Am I in the "WARNING" period for imminent shutdown?
+const int CYLON_DELAY_PERIOD = 20;            // Adjust how fast the WARNING light cycles - 20ms seems about right
 
 // Safety section
 const int8_t MAX_FIREPLACE_TIMER_VALUE = 60;  // You should never find a timer value larger than this
@@ -123,7 +123,6 @@ const int8_t MAX_FILEPLACE_TIME = 120;        // Fireplace will never be on long
 // These are used in the interrupt service routine, so they are volatile
 volatile unsigned long buttonPressDuration = 0;  // Also used as a flag that a button press now requires processing
 
-unsigned long lastCountDownTimer  = 0;        // This is used to keep track of time in the sketch
 unsigned long elapsedWholeMinutes = 0;        // Number of whole minutes since the program started.  unsigned long gives me 4 bytes (2 ^ 32 = ~8000 years without a rollover)
 unsigned long tmpWholeMinutes;                // tmp location to stash calculation so I don't have to test condition and calculate twice
 
@@ -175,9 +174,6 @@ void setup()
   attachInterrupt (0, isrButtonPress, CHANGE);   
   buttonPressDuration = 0;    // For some reason the above interrupt "fires" when it is first attached.  At least I believe that is the case.  Setting this var to "0" fixes that issue.
   
-  // Alarm.timerRepeat(5, countDownTimer); // timer for every 60 seconds
-  lastCountDownTimer = millis ();          // This essentially starts the timer running for this sketch.  Not 100% sure how accurate this will be.
-
   // learnKeycodes();                  // learn remote control key  codes
 }
 
@@ -216,18 +212,14 @@ void loop()
     digitalWrite (fireplacePin, HIGH);
   }
   
-  // Do the glowing LED thang when the fireplace is about to go out.  A bit of logic added to cover transition to fireplaceoff (fireplaceMinutes > 0)
-  if ( (fireplaceOn) && (fireplaceMinutes <= WARNING) && (fireplaceMinutes > 0) ) warningLight ();
+  // Do the glowing LED thang when the fireplace is about to go out. 
+  if (SHUTDOWN_WARNING_PERIOD) warningLight ();
        
-  // Alarm.delay (0);  // You have to service the Time library with this command
-  // Giving up on "Alarm" since it added about 2Kb to my sketch.
   // I want to call the "countDownTimer" routine once a minute
   if ( (tmpWholeMinutes = millis () / MS_PER_MIN) > elapsedWholeMinutes)   // this means we've advanced at least a minute 
   {
-    debug.print ("advancing minutes.  tmpWholeMinutes =      ");
-    debug.println (tmpWholeMinutes);
-    debug.print ("                    elapshedWholeMinutes = ");
-    debug.println (elapsedWholeMinutes);    
+    // debug.print ("advancing minutes.  elapsedWholeMinutes =      ");
+    // debug.println (elapsedWholeMinutes);    
     countDownTimer ();
     elapsedWholeMinutes = tmpWholeMinutes;  // update with the lastest value (which I stored in tmpWholeMinutes
   }
@@ -245,26 +237,29 @@ void loop()
 void countDownTimer ()
 {
   
-//  if (fireplaceOn)  // All of the logic below is only of interest if the fireplaceOn == true
-//  {
+  if (fireplaceOn)  // All of the logic below is only of interest if the fireplaceOn == true
+  {
     if (fireplaceMinutes == 0)
     {
-      debug.println ("Fireplace is off");
+      debug.println ("Turning Fireplace OFF");
       digitalWrite (indicatorArray[indicatorArrayIndex], LOW);  // turn off last indicator
       indicatorArrayIndex = 0;
       fireplaceOn = false;
+      SHUTDOWN_WARNING_PERIOD = false;   // disable the CYLON glowing LED
       // TURN OFF THE FIREPLACE HERE
       digitalWrite (fireplacePin, LOW);   // turned it off
     }
-    else if (fireplaceMinutes <= WARNING)  // Dang, it's about to go out!
+    else if (fireplaceMinutes <= SHUTDOWN_WARNING_MINUTES)  // Dang, it's about to go out!
     {
       fireplaceMinutes -= 1;
+      SHUTDOWN_WARNING_PERIOD = true;   // enable the CYLON glowing LED
       debug.print ("WARNING: Fireplace is about to go off!  Time remaining: ");
       debug.println (fireplaceMinutes);
     }
-    else if (fireplaceOn == true)   // If the fireplace isn't yet on, don't report that it's running.  [Needed this logic only during testing when 1 minute = 5 seconds]
+    else // if (fireplaceOn == true)   // If the fireplace isn't yet on, don't report that it's running.  [Needed this logic only during testing when 1 minute = 5 seconds]
     {
       fireplaceMinutes -= 1;
+      SHUTDOWN_WARNING_PERIOD = false;   // disable the CYLON glowing LED if enabled      
       debug.print ("Fireplace is running.  Time remaining: ");
       debug.println (fireplaceMinutes);    
       if (fireplaceMinutes + MINUTES_PER_INDICATOR < (indicatorArrayIndex * MINUTES_PER_INDICATOR))
@@ -275,7 +270,7 @@ void countDownTimer ()
         debug.println (indicatorArrayIndex);   
       }
     }
-//  }
+  }
 }
 
 
@@ -290,7 +285,10 @@ void buttonPress (int source)
 {
   // source is a text string indicating "console" or "IR" - not sure if I need that info or not
   lastUserInput = millis ();  // record when the last button was pressed so I can decide when the user is "done"
+  
+  SHUTDOWN_WARNING_PERIOD = false;   // cancel the CYLON glowing LED (only really needed if in SHUTDOWN_WARNING_PERIOD)
 
+  /*  This is pretty much debugging, so commenting it out for now
   if (source == CONSOLE)
   {
     debug.print ("CONSOLE button was depressed for ");
@@ -301,6 +299,7 @@ void buttonPress (int source)
   {
     debug.println ("IR button was pressed");
   }
+  */
     
   // turn off current indicator and turn on the next one
   digitalWrite (indicatorArray[indicatorArrayIndex++], LOW);
