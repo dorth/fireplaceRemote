@@ -96,10 +96,23 @@ const int numIndicators = 5;             // Four visible, one is "blank" or "all
 int indicatorArrayIndex = 0;             // Keeps track of which LED is lit (index into indicatorArray)
 int indicatorArray [numIndicators] = {led00, led15, led30, led45, led60};
 
+/*
+const char GARBAGE1 [] = "What the heck is this and why should I even care?";
+const char GARBAGE2 [] = "What the heck is this and why should I even care?";
+const char GARBAGE3 [] = "What the heck is this and why should I even care?";
+const char GARBAGE4 [] = "What the heck is this and why should I even care?";
+const char GARBAGE5 [] = "What the heck is this and why should I even care?";
+const char GARBAGE6 [] = "What the heck is this and why should I even care?";
+const char GARBAGE7 [] = "What the heck is this and why should I even care?";
+const char GARBAGE8 [] = "What the heck is this and why should I even care?";
+*/
+
+
+
 boolean fireplaceOn = false;             // keep track of fireplace state
 int fireplaceMinutes = 0;                // Number of minutes left to run fireplace. Start with 0 so you don't FLAME ON!  :-)  Unsigned, so never negative
-const int WARNING = 14;               // Flash the LED when you've got this many minutes left
-const int8_t CYLON_DELAY_PERIOD = 20;    // Adjust how fast the WARNING light cycles - 20ms seems about right
+const int WARNING = 5;                   // Flash the LED when you've got this many minutes left
+const int CYLON_DELAY_PERIOD = 20;       // Adjust how fast the WARNING light cycles - 20ms seems about right
 
 // Safety section
 const int8_t MAX_FIREPLACE_TIMER_VALUE = 60;  // You should never find a timer value larger than this
@@ -107,7 +120,6 @@ const int8_t MAX_FILEPLACE_TIME = 120;        // Fireplace will never be on long
 
 // These are used in the interrupt service routine, so they are volatile
 volatile unsigned long buttonPressDuration = 0;  // Also used as a flag that a button press now requires processing
-volatile unsigned long buttonPressBegin;
 
 unsigned long lastUserInput = 0;
 
@@ -118,8 +130,17 @@ SoftwareSerial debug (rxpin, txpin);  // create a new software serial port
 
 void setup()
 {
+  // delay (5000);
 
   debug.begin(9600);
+  
+ /*
+  debug.println (GARBAGE1);
+  debug.println (GARBAGE2);
+  debug.println (GARBAGE3);  
+  debug.println (GARBAGE4);  
+  */
+ 
 
   pinMode (led15, OUTPUT);
   pinMode (led30, OUTPUT);
@@ -143,11 +164,15 @@ void setup()
   #else
     debug.println ("Started fireplace Remote Control Sketch on ATmega328");
   #endif
+
+  debug.println ("Startup Delay ...");
+  delay (2000);
   
-  debug.println ("Press a remote key");
-  
+  debug.println ("Armed and ready."); 
+   
   // Set up interrupt to handle buttonPress
-  attachInterrupt (0, isrButtonPress, CHANGE);  
+  attachInterrupt (0, isrButtonPress, CHANGE);   
+  buttonPressDuration = 0;    // For some reason the above interrupt "fires" when it is first attached.  At least I believe that is the case.  Setting this var to "0" fixes that issue.
   
   Alarm.timerRepeat(5, countDownTimer); // timer for every 60 seconds
 
@@ -157,11 +182,11 @@ void setup()
 void loop()
 {
   long key;
-  
+   
   // The logic should be the same regardless if you pressed the physical button or the remote control button
   // So I will put the control logic into a subroutine which gets called from either action
   
-  if (buttonPressDuration)   // Will fire if the time is greater than 0
+  if (buttonPressDuration > 0)   // Will fire if the time is greater than 0
   {
     buttonPress (CONSOLE);
     buttonPressDuration = 0;  // reset this back to zero since I use it as a flag for processing    
@@ -206,8 +231,8 @@ void loop()
 void countDownTimer ()
 {
   
-  if (fireplaceOn)  // All of the logic below is only of interest if the fireplaceOn == true
-  {
+//  if (fireplaceOn)  // All of the logic below is only of interest if the fireplaceOn == true
+//  {
     if (fireplaceMinutes == 0)
     {
       debug.println ("Fireplace is off");
@@ -223,7 +248,7 @@ void countDownTimer ()
       debug.print ("WARNING: Fireplace is about to go off!  Time remaining: ");
       debug.println (fireplaceMinutes);
     }
-    else // if (fireplaceOn == true)   // If the fireplace isn't yet on, don't report that it's running.  [Needed this logic only during testing when 1 minute = 5 seconds]
+    else if (fireplaceOn == true)   // If the fireplace isn't yet on, don't report that it's running.  [Needed this logic only during testing when 1 minute = 5 seconds]
     {
       fireplaceMinutes -= 1;
       debug.print ("Fireplace is running.  Time remaining: ");
@@ -236,7 +261,7 @@ void countDownTimer ()
         debug.println (indicatorArrayIndex);   
       }
     }
-  }
+//  }
 }
 
 
@@ -275,7 +300,6 @@ void buttonPress (int source)
   fireplaceMinutes = indicatorArrayIndex * MINUTES_PER_INDICATOR;  // Each indicator segment is MINUTES_PER_INDICATOR long
   debug.print ("fireplaceMinutes is now set to ");
   debug.println (fireplaceMinutes);
-
 }
 
 /*
@@ -376,37 +400,17 @@ long switchTime(int pin)
     return 0;                               // return 0 if the switch is not pushed (i.e. in the HIGH state);
 }
 
-// debounce returns true if the switch in the given pin is closed and stable
-// Be aware that this is "inverted" logic because I'm using a pull-up resistor
-boolean debounce (int pin)
-{
-  boolean state;
-  boolean previousState;
-  previousState = digitalRead (pin); // store switch state
-  
-  for (int counter=0; counter < debounceDelay; counter++)
-  {
-    delay (1); // wait for 1 millisecond
-    state = digitalRead(pin); // read the pin
-    if (state != previousState)
-    {
-      counter = 0; // reset the counter if the state changes
-      previousState = state; // and save the current state
-    }
-  }
-  // here when the switch state has been stable longer than the debounce period
-  if (state == LOW) // LOW means pressed (because pull-ups are used)
-    return true;
-  else
-    return false;
-}
 
 // Interrupt Service Routine for buttonPress
 void isrButtonPress ()
-{ // Debounce the button press [without the use of delay (since I can't use that here)]
-  // Basically I just ignore any interrupt that occurs too quickly (i.e. less than debounceDelay)
-  static unsigned long lastInterruptTime = 0;         // This tracks how long ago this ISR was called
+{ 
   
+  static unsigned long lastInterruptTime = 0;
+  volatile static unsigned long buttonPressBegin;  // This is only used locally within the ISR (thus volatile), but needs to be preserved call over call (i.e. static)
+  // Debounce the button press [without the use of delay (since I can't use that here)]
+  // Basically I just ignore any interrupt that occurs too quickly (i.e. less than debounceDelay)
+  //  static unsigned long lastInterruptTime = millis (); // This tracks how long ago this ISR was called.  I used to have this set to 0, but the program was detecting a button press upon powerup, so trying this.
+                                                      // The above modification seems to have done the trick
   if (millis () - lastInterruptTime > debounceDelay)  // If this is true, then go ahead and "do stuff". Otherwise, just exit.
   {
     int buttonState = digitalRead (pushButton);       // get the current state of the button
@@ -429,7 +433,7 @@ void isrButtonPress ()
 void warningLight () 
 {
   static unsigned long lastAdjustmentTime = 0;  // to avoid a "delay" in the code, I'm going to keep track of the last time I changed the LED
-  static uint8_t hbval   = 0;                   // Starts at the minimum value since the LED will already be illuminated when I start
+  static uint8_t hbval   = 10;                  // Starts at the minimum value since the LED will already be illuminated when I start.  BE CAREFUL - you don't want to bump the top or the bottom value or you'll spill over to a negative value!
   static int8_t  hbdelta = 2;                   // Tried 4, but it seemed a bit fast.  Also be aware that this "step" value affects the "speed" of the cycle (see CYLON_DELAY_PERIOD)
 
   if (millis () - lastAdjustmentTime > CYLON_DELAY_PERIOD)  // CYLON DELAY adjust how quickly I cycle
@@ -438,6 +442,15 @@ void warningLight ()
     if (hbval <  10) hbdelta = -hbdelta;        // started with  32
     hbval += hbdelta;
     analogWrite(led15, hbval);
+
+    #ifdef DEBUGALL
+   
+      debug.print ("CYLON adjusted to ");
+      debug.println (hbval);
+      
+    #endif
+
     lastAdjustmentTime = millis ();    
+
   }
 }
