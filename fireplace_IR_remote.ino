@@ -53,7 +53,7 @@ const int IR = 2;                      // This is the IR "made up" source number
 const int MINUTES_PER_INDICATOR = 15;  // Each indicator light = 15 minutes
 const int BUTTON_PRESS_DELAY = 3000;   // number of milliseconds after which I'll assume the user is done pressing buttons
 unsigned long lastUserInput = 0;       // This tracks the last time user input was received.  Used in conjunction with BUTTON_PRESS_DELAY to determine when to commit a command.
-const unsigned int MS_PER_MIN = 5000; // 60000 milliseconds per minute. This allows me to adjust the timing for either testing purposes or inaccurate crystals
+const unsigned int MS_PER_MIN = 60000; // 60000 milliseconds per minute. This allows me to adjust the timing for either testing purposes or inaccurate crystals
 
 
 #if defined(__AVR_ATtiny84__)
@@ -204,13 +204,23 @@ void loop()
     } 
     irrecv.resume();
   }
-  // I want to give the user a chance to change their mind before acting on their command
-  if ( (fireplaceOn == false)  && (millis () - lastUserInput > BUTTON_PRESS_DELAY) && (fireplaceMinutes > 0) )
+ 
+  if (millis () - lastUserInput > BUTTON_PRESS_DELAY)     // Wait until the user stops pressing buttons
   {
-    debug.println ("Sending START signal to fireplace");
-    fireplaceOn = true;
-    digitalWrite (fireplacePin, HIGH);
+    if ( ! (fireplaceOn) && (fireplaceMinutes > 0) )      // if the fireplace is off AND the fireplaceMinutes > 0, then turn on fireplace
+    {
+      digitalWrite (fireplacePin, HIGH);
+      debug.println ("Sending START signal to fireplace");
+      fireplaceOn = true;
+    }
+    else if ( (fireplaceOn) && (fireplaceMinutes <= 0) )  // if the fireplace is on AND the fireplaceMinutes <=0, then turn off the fireplace
+    {
+      digitalWrite (fireplacePin, LOW);      
+      debug.println ("Sending STOP signal to fireplace");
+      fireplaceOn = false;
+    }
   }
+ 
   
   // Do the glowing LED thang when the fireplace is about to go out. 
   if (SHUTDOWN_WARNING_PERIOD) warningLight ();
