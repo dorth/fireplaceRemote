@@ -4931,13 +4931,8 @@ type 0309, grid 2.5 mm</description>
 </sheet>
 </sheets>
 <errors>
-<approved hash="115,1,79.4682,0.131231,LED15-HDR,,,,,"/>
-<approved hash="115,1,79.4682,12.8312,LED30-HDR,,,,,"/>
-<approved hash="115,1,79.4682,25.5312,LED45-HDR,,,,,"/>
-<approved hash="115,1,79.4682,38.2312,LED60-HDR,,,,,"/>
-<approved hash="115,1,21.388,61.0912,PB-HDR,,,,,"/>
-<approved hash="115,1,39.2388,94.624,IR-HDR,,,,,"/>
-<approved hash="115,1,130.335,53.4712,RELAY-HDR,,,,,"/>
+<approved hash="104,1,-78.74,-2.54,IC2,AGND,GND,,,"/>
+<approved hash="115,1,45.5888,8.84767,16XHDR,,,,,"/>
 </errors>
 </schematic>
 </drawing>

@@ -4731,7 +4731,6 @@ type 0309, grid 2.5 mm</description>
 <pinref part="16XHDR" gate="A" pin="11"/>
 <wire x1="50.8" y1="5.08" x2="50.8" y2="-2.54" width="0.1524" layer="91"/>
 <junction x="48.26" y="-2.54"/>
-<junction x="50.8" y="-2.54"/>
 </segment>
 </net>
 <net name="VCC" class="0">
