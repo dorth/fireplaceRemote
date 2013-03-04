@@ -215,9 +215,9 @@ void loop()
     }
     else if ( (fireplaceOn) && (fireplaceMinutes <= 0) )  // if the fireplace is on AND the fireplaceMinutes <=0, then turn off the fireplace
     {
-      digitalWrite (fireplacePin, LOW);      
-      debug.println ("Sending STOP signal to fireplace");
-      fireplaceOn = false;
+      shutdownFireplace ();  // Function to do all the steps involved in shutting down the fireplace.  
+                             // Could probably also just seting fireplaceMinutes = 0 and then directly call countDownTimer, but that short circuits the countDownTimer (but since we're
+                             // turning it "OFF", does that really matter?  I guess not really.  Anyway, I'll call the shutdown directly from here for now.
     }
   }
  
@@ -251,13 +251,7 @@ void countDownTimer ()
   {
     if (fireplaceMinutes == 0)
     {
-      debug.println ("Turning Fireplace OFF");
-      digitalWrite (indicatorArray[indicatorArrayIndex], LOW);  // turn off last indicator
-      indicatorArrayIndex = 0;
-      fireplaceOn = false;
-      SHUTDOWN_WARNING_PERIOD = false;   // disable the CYLON glowing LED
-      // TURN OFF THE FIREPLACE HERE
-      digitalWrite (fireplacePin, LOW);   // turned it off
+      shutdownFireplace ();  // Function to do all the steps involved in shutting down the fireplace
     }
     else if (fireplaceMinutes <= SHUTDOWN_WARNING_MINUTES)  // Dang, it's about to go out!
     {
@@ -477,3 +471,21 @@ void warningLight ()
 
   }
 }
+
+/* 
+
+ * Shutdown the fireplace.  I ended up having to have this logic exist in two places
+ * but didn't want to replicate the code, so putting this into a function.
+ 
+ */
+void shutdownFireplace ()
+{
+      debug.println ("Turning Fireplace OFF");
+      digitalWrite (indicatorArray[indicatorArrayIndex], LOW);  // turn off last indicator
+      indicatorArrayIndex = 0;
+      fireplaceOn = false;
+      SHUTDOWN_WARNING_PERIOD = false;   // disable the CYLON glowing LED
+      // TURN OFF THE FIREPLACE HERE
+      digitalWrite (fireplacePin, LOW);   // turned it off
+}
+
