@@ -4653,6 +4653,7 @@ type 0309, grid 2.5 mm</description>
 <sheets>
 <sheet>
 <plain>
+<text x="-109.22" y="68.58" size="1.778" layer="91">v2 - Moved LED60 to PIN17 (Digi 11)</text>
 </plain>
 <instances>
 <instance part="GND2" gate="1" x="55.88" y="63.5" rot="R180"/>
@@ -4773,12 +4774,16 @@ type 0309, grid 2.5 mm</description>
 </net>
 <net name="N$8" class="0">
 <segment>
-<wire x1="-2.54" y1="2.54" x2="-2.54" y2="27.94" width="0.1524" layer="91"/>
 <wire x1="-2.54" y1="27.94" x2="5.08" y2="27.94" width="0.1524" layer="91"/>
 <pinref part="R60" gate="G$1" pin="1"/>
-<pinref part="328" gate="1" pin="PB1(OC1A)"/>
-<wire x1="-17.78" y1="0" x2="-2.54" y2="0" width="0.1524" layer="91"/>
-<wire x1="-2.54" y1="0" x2="-2.54" y2="2.54" width="0.1524" layer="91"/>
+<pinref part="ISP" gate="G$1" pin="MOSI"/>
+<pinref part="328" gate="1" pin="PB3(MOSI/OC2)"/>
+<wire x1="-17.78" y1="-5.08" x2="-5.08" y2="-5.08" width="0.1524" layer="91"/>
+<wire x1="-5.08" y1="-5.08" x2="-5.08" y2="27.94" width="0.1524" layer="91"/>
+<wire x1="-5.08" y1="27.94" x2="-5.08" y2="38.1" width="0.1524" layer="91"/>
+<wire x1="-5.08" y1="48.26" x2="-5.08" y2="38.1" width="0.1524" layer="91"/>
+<wire x1="-2.54" y1="27.94" x2="-5.08" y2="27.94" width="0.1524" layer="91"/>
+<junction x="-5.08" y="27.94"/>
 </segment>
 </net>
 <net name="N$9" class="0">
@@ -4802,15 +4807,6 @@ type 0309, grid 2.5 mm</description>
 <wire x1="73.66" y1="-10.16" x2="73.66" y2="81.28" width="0.1524" layer="91"/>
 <wire x1="73.66" y1="81.28" x2="66.04" y2="81.28" width="0.1524" layer="91"/>
 <junction x="66.04" y="81.28"/>
-</segment>
-</net>
-<net name="N$10" class="0">
-<segment>
-<pinref part="ISP" gate="G$1" pin="MOSI"/>
-<pinref part="328" gate="1" pin="PB3(MOSI/OC2)"/>
-<wire x1="-17.78" y1="-5.08" x2="-5.08" y2="-5.08" width="0.1524" layer="91"/>
-<wire x1="-5.08" y1="-5.08" x2="-5.08" y2="38.1" width="0.1524" layer="91"/>
-<wire x1="-5.08" y1="48.26" x2="-5.08" y2="38.1" width="0.1524" layer="91"/>
 </segment>
 </net>
 <net name="N$12" class="0">

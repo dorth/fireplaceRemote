@@ -4821,7 +4821,9 @@ type 0309, grid 2.5 mm</description>
 <wire x1="-10.16" y1="-7.62" x2="-10.16" y2="35.56" width="0.1524" layer="91"/>
 <wire x1="-10.16" y1="35.56" x2="10.16" y2="35.56" width="0.1524" layer="91"/>
 <pinref part="16XHDR" gate="A" pin="12"/>
-<wire x1="10.16" y1="35.56" x2="50.8" y2="35.56" width="0.1524" layer="91"/>
+<wire x1="10.16" y1="35.56" x2="17.78" y2="35.56" width="0.1524" layer="91"/>
+<wire x1="17.78" y1="35.56" x2="22.86" y2="35.56" width="0.1524" layer="91"/>
+<wire x1="22.86" y1="35.56" x2="50.8" y2="35.56" width="0.1524" layer="91"/>
 <wire x1="50.8" y1="35.56" x2="50.8" y2="12.7" width="0.1524" layer="91"/>
 <wire x1="-2.54" y1="76.2" x2="-2.54" y2="78.74" width="0.1524" layer="91"/>
 <wire x1="-2.54" y1="78.74" x2="10.16" y2="78.74" width="0.1524" layer="91"/>
@@ -4929,13 +4931,8 @@ type 0309, grid 2.5 mm</description>
 </sheet>
 </sheets>
 <errors>
-<approved hash="115,1,79.4682,0.131231,LED15-HDR,,,,,"/>
-<approved hash="115,1,79.4682,12.8312,LED30-HDR,,,,,"/>
-<approved hash="115,1,79.4682,25.5312,LED45-HDR,,,,,"/>
-<approved hash="115,1,79.4682,38.2312,LED60-HDR,,,,,"/>
-<approved hash="115,1,21.388,61.0912,PB-HDR,,,,,"/>
-<approved hash="115,1,39.2388,94.624,IR-HDR,,,,,"/>
-<approved hash="115,1,130.335,53.4712,RELAY-HDR,,,,,"/>
+<approved hash="104,1,-78.74,-2.54,IC2,AGND,GND,,,"/>
+<approved hash="115,1,45.5888,8.84767,16XHDR,,,,,"/>
 </errors>
 </schematic>
 </drawing>
